@@ -1,23 +1,55 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-  <title>Document</title>
+	<meta charset="UTF-8">
+	<meta name="viewport"
+		  content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<title>Document</title>
 </head>
 <body>
-  <div id="app">
-    hello world
-  </div>
-  <script src="../dist/vue.js"></script>
-  <script>
-    const vm = new Vue({
-      el: '#app',
-      render: h=>{
-        return h('h1','Hello Render')
-      },
-    })
-  </script>
+<div id="app">
+	hello world
+	{{a}}
+	{{a}}
+
+	{{b}}
+<!--	{{JSON.stringify(c)}}-->
+	{{JSON.stringify(d)}}
+	<button @click="clickItem">click</button>
+	<ul>
+<!--		<li v-for="item in testArr"> {{ item }} </li>-->
+		<li v-for="item in testArr" :key="item">{{item}}</li>
+	</ul>
+</div>
+<script src="../dist/vue.js"></script>
+<script>
+	const vm = new Vue({
+		el: '#app',
+		// render: h => {
+		// 	return h('h1', 'Hello Render')
+		// },
+		data: function (){
+			return {
+				a:2,
+				b:3,
+				c:{
+					d:2,
+					e:{
+						q:5,
+					}
+				},
+				d:[
+					1,23,4,245,52,2,23
+				],
+				testArr: ['a','b','c','d']
+			}
+		},
+		methods: {
+			clickItem() {
+				this.testArr.splice(1, 0, 'x');
+			}
+		}
+	})
+</script>
 </body>
 </html>

@@ -42,6 +42,7 @@ export function initMixin(Vue: Class<Component>) {
 				vm
 			)
 		}
+		// vm设置_renderProxy 渲染代理对象
 		/* istanbul ignore else */
 		if (process.env.NODE_ENV !== 'production') {
 			initProxy(vm)
@@ -50,14 +51,16 @@ export function initMixin(Vue: Class<Component>) {
 		}
 		// expose real self
 		vm._self = vm
-		initLifecycle(vm)
-		initEvents(vm)
-		initRender(vm)
-		callHook(vm, 'beforeCreate')
-		initInjections(vm) // resolve injections before data/props
+		initLifecycle(vm) // $parent $root $children $refs 以及将自身添加到父组件的$children中
+		initEvents(vm) // 初始化存储事件的属性
+		initRender(vm) // 初始化render相关
+		callHook(vm, 'beforeCreate') // 触发钩子函数beforeCreate
+
+		initInjections(vm) // resolve injections before data/props 初始话依赖注入的inject
 		initState(vm)
-		initProvide(vm) // resolve provide after data/props
-		callHook(vm, 'created')
+		initProvide(vm) // resolve provide after data/props 初始话依赖注入的provide
+
+		callHook(vm, 'created') // 触发钩子函数created
 
 		/* istanbul ignore if */
 		if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
@@ -67,6 +70,9 @@ export function initMixin(Vue: Class<Component>) {
 		}
 
 		if (vm.$options.el) {
+			// 调用了原型的$mount方法 这个方法在runtime中被赋值
+			// 内部会调用mountComponent(this, el, hydrating)方法
+			// 如果时带编译版本的vue 最终也仍会调用这个方法
 			vm.$mount(vm.$options.el)
 		}
 	}

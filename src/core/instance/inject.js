@@ -44,6 +44,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
       ? Reflect.ownKeys(inject)
       : Object.keys(inject)
 
+	  // 遍历inject的key 从vm的_provided上获取 _provided属性会在initProvide定义
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i]
       // #6574 in case the inject object is observed...

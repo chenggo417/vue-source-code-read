@@ -2,14 +2,14 @@
 
 import type Watcher from './watcher'
 import config from '../config'
-import { callHook, activateChildComponent } from '../instance/lifecycle'
+import {callHook, activateChildComponent} from '../instance/lifecycle'
 
 import {
-  warn,
-  nextTick,
-  devtools,
-  inBrowser,
-  isIE
+	warn,
+	nextTick,
+	devtools,
+	inBrowser,
+	isIE
 } from '../util/index'
 
 export const MAX_UPDATE_COUNT = 100
@@ -25,13 +25,13 @@ let index = 0
 /**
  * Reset the scheduler's state.
  */
-function resetSchedulerState () {
-  index = queue.length = activatedChildren.length = 0
-  has = {}
-  if (process.env.NODE_ENV !== 'production') {
-    circular = {}
-  }
-  waiting = flushing = false
+function resetSchedulerState() {
+	index = queue.length = activatedChildren.length = 0
+	has = {}
+	if (process.env.NODE_ENV !== 'production') {
+		circular = {}
+	}
+	waiting = flushing = false
 }
 
 // Async edge case #6566 requires saving the timestamp when event listeners are
@@ -51,109 +51,123 @@ let getNow: () => number = Date.now
 // All IE versions use low-res event timestamps, and have problematic clock
 // implementations (#9632)
 if (inBrowser && !isIE) {
-  const performance = window.performance
-  if (
-    performance &&
-    typeof performance.now === 'function' &&
-    getNow() > document.createEvent('Event').timeStamp
-  ) {
-    // if the event timestamp, although evaluated AFTER the Date.now(), is
-    // smaller than it, it means the event is using a hi-res timestamp,
-    // and we need to use the hi-res version for event listener timestamps as
-    // well.
-    getNow = () => performance.now()
-  }
+	const performance = window.performance
+	if (
+		performance &&
+		typeof performance.now === 'function' &&
+		getNow() > document.createEvent('Event').timeStamp
+	) {
+		// if the event timestamp, although evaluated AFTER the Date.now(), is
+		// smaller than it, it means the event is using a hi-res timestamp,
+		// and we need to use the hi-res version for event listener timestamps as
+		// well.
+		getNow = () => performance.now()
+	}
 }
 
 /**
  * Flush both queues and run the watchers.
  */
-function flushSchedulerQueue () {
-  currentFlushTimestamp = getNow()
-  flushing = true
-  let watcher, id
+function flushSchedulerQueue() {
+	// 获取当前时间戳
+	currentFlushTimestamp = getNow()
+	// 修改当前状态为刷新状态
+	flushing = true
+	let watcher, id
 
-  // Sort queue before flush.
-  // This ensures that:
-  // 1. Components are updated from parent to child. (because parent is always
-  //    created before the child)
-  // 2. A component's user watchers are run before its render watcher (because
-  //    user watchers are created before the render watcher)
-  // 3. If a component is destroyed during a parent component's watcher run,
-  //    its watchers can be skipped.
-  queue.sort((a, b) => a.id - b.id)
+	// Sort queue before flush.
+	// This ensures that:
+	// 1. Components are updated from parent to child. (because parent is always
+	//    created before the child)
+	// 2. A component's user watchers are run before its render watcher (because
+	//    user watchers are created before the render watcher)
+	// 3. If a component is destroyed during a parent component's watcher run,
+	//    its watchers can be skipped.
+	// 对队列进行排序
+	/*
+	原因：
+		1. 父组件更新将在子组件之前(因为父组件先创建)
+		2. 组件中 用户定义的watcher时在渲染watcher之前定义的(watcher在initState中定义，渲染watcher在mountComponent时定义)
+		3. 如果一个组件在父组件watcher期间 子组件销毁了 那么子组件的watcher就可以跳过
+	* */
+	queue.sort((a, b) => a.id - b.id)
 
-  // do not cache length because more watchers might be pushed
-  // as we run existing watchers
-  for (index = 0; index < queue.length; index++) {
-    watcher = queue[index]
-    if (watcher.before) {
-      watcher.before()
-    }
-    id = watcher.id
-    has[id] = null
-    watcher.run()
-    // in dev build, check and stop circular updates.
-    if (process.env.NODE_ENV !== 'production' && has[id] != null) {
-      circular[id] = (circular[id] || 0) + 1
-      if (circular[id] > MAX_UPDATE_COUNT) {
-        warn(
-          'You may have an infinite update loop ' + (
-            watcher.user
-              ? `in watcher with expression "${watcher.expression}"`
-              : `in a component render function.`
-          ),
-          watcher.vm
-        )
-        break
-      }
-    }
-  }
+	// do not cache length because more watchers might be pushed
+	// as we run existing watchers
+	// 不去缓存length 是因为队列可能被添加入其他watcher
+	for (index = 0; index < queue.length; index++) {
+		watcher = queue[index]
+		if (watcher.before) {
+			// before是渲染watcher才有的
+			// 触发钩子函数beforeUpdate
+			watcher.before()
+		}
+		id = watcher.id
+		// 将has中id的值重新置为null 为了下一次触发watcher时可以正常被使用
+		has[id] = null
+		// 调用watcher 的run方法
+		watcher.run()
+		// in dev build, check and stop circular updates.
+		if (process.env.NODE_ENV !== 'production' && has[id] != null) {
+			circular[id] = (circular[id] || 0) + 1
+			if (circular[id] > MAX_UPDATE_COUNT) {
+				warn(
+					'You may have an infinite update loop ' + (
+						watcher.user
+							? `in watcher with expression "${watcher.expression}"`
+							: `in a component render function.`
+					),
+					watcher.vm
+				)
+				break
+			}
+		}
+	}
 
-  // keep copies of post queues before resetting state
-  const activatedQueue = activatedChildren.slice()
-  const updatedQueue = queue.slice()
+	// keep copies of post queues before resetting state
+	const activatedQueue = activatedChildren.slice()
+	const updatedQueue = queue.slice()
 
-  resetSchedulerState()
+	resetSchedulerState()
 
-  // call component updated and activated hooks
-  callActivatedHooks(activatedQueue)
-  callUpdatedHooks(updatedQueue)
+	// call component updated and activated hooks
+	callActivatedHooks(activatedQueue)
+	callUpdatedHooks(updatedQueue)
 
-  // devtool hook
-  /* istanbul ignore if */
-  if (devtools && config.devtools) {
-    devtools.emit('flush')
-  }
+	// devtool hook
+	/* istanbul ignore if */
+	if (devtools && config.devtools) {
+		devtools.emit('flush')
+	}
 }
 
-function callUpdatedHooks (queue) {
-  let i = queue.length
-  while (i--) {
-    const watcher = queue[i]
-    const vm = watcher.vm
-    if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
-      callHook(vm, 'updated')
-    }
-  }
+function callUpdatedHooks(queue) {
+	let i = queue.length
+	while (i--) {
+		const watcher = queue[i]
+		const vm = watcher.vm
+		if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
+			callHook(vm, 'updated')
+		}
+	}
 }
 
 /**
  * Queue a kept-alive component that was activated during patch.
  * The queue will be processed after the entire tree has been patched.
  */
-export function queueActivatedComponent (vm: Component) {
-  // setting _inactive to false here so that a render function can
-  // rely on checking whether it's in an inactive tree (e.g. router-view)
-  vm._inactive = false
-  activatedChildren.push(vm)
+export function queueActivatedComponent(vm: Component) {
+	// setting _inactive to false here so that a render function can
+	// rely on checking whether it's in an inactive tree (e.g. router-view)
+	vm._inactive = false
+	activatedChildren.push(vm)
 }
 
-function callActivatedHooks (queue) {
-  for (let i = 0; i < queue.length; i++) {
-    queue[i]._inactive = true
-    activateChildComponent(queue[i], true /* true */)
-  }
+function callActivatedHooks(queue) {
+	for (let i = 0; i < queue.length; i++) {
+		queue[i]._inactive = true
+		activateChildComponent(queue[i], true /* true */)
+	}
 }
 
 /**
@@ -161,30 +175,38 @@ function callActivatedHooks (queue) {
  * Jobs with duplicate IDs will be skipped unless it's
  * pushed when the queue is being flushed.
  */
-export function queueWatcher (watcher: Watcher) {
-  const id = watcher.id
-  if (has[id] == null) {
-    has[id] = true
-    if (!flushing) {
-      queue.push(watcher)
-    } else {
-      // if already flushing, splice the watcher based on its id
-      // if already past its id, it will be run next immediately.
-      let i = queue.length - 1
-      while (i > index && queue[i].id > watcher.id) {
-        i--
-      }
-      queue.splice(i + 1, 0, watcher)
-    }
-    // queue the flush
-    if (!waiting) {
-      waiting = true
+export function queueWatcher(watcher: Watcher) {
+	// 获取watcher的id  由于id是自增的，所以id的大小代表的watcher的创建顺序
+	const id = watcher.id
+	if (has[id] == null) {
+		// 如果has[id]为空 说明该watcher没有被处理  进入分支后将其置为true标记这个watcher已经被处理了
+		has[id] = true
+		// 判断是否处于刷新中
+		if (!flushing) {
+			// 不处于刷新时 将watcher直接放到末尾
+			queue.push(watcher)
+		} else {
+			// if already flushing, splice the watcher based on its id
+			// if already past its id, it will be run next immediately.
+			// 如果处于刷新状态  则要判断已经完成到那个位置了
+			// 因执行前会将队列按照id进行排序 所以找到还未处理的watcher 并按大小顺序插入到其中
+			let i = queue.length - 1
+			while (i > index && queue[i].id > watcher.id) {
+				i--
+			}
+			queue.splice(i + 1, 0, watcher)
+		}
+		// queue the flush
+		if (!waiting) {
+			// 判断是否处于等待状态
+			waiting = true
 
-      if (process.env.NODE_ENV !== 'production' && !config.async) {
-        flushSchedulerQueue()
-        return
-      }
-      nextTick(flushSchedulerQueue)
-    }
-  }
+			if (process.env.NODE_ENV !== 'production' && !config.async) {
+				flushSchedulerQueue()
+				return
+			}
+			// 生产环境下 会将刷新方法交给nextTick调用
+			nextTick(flushSchedulerQueue)
+		}
+	}
 }

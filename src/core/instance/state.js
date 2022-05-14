@@ -48,6 +48,7 @@ export function proxy(target: Object, sourceKey: string, key: string) {
 
 export function initState(vm: Component) {
 	vm._watchers = []
+	// 初始化配置项
 	const opts = vm.$options
 	if (opts.props) initProps(vm, opts.props)
 	if (opts.methods) initMethods(vm, opts.methods)
@@ -104,6 +105,7 @@ function initProps(vm: Component, propsOptions: Object) {
 		// during Vue.extend(). We only need to proxy props defined at
 		// instantiation here.
 		if (!(key in vm)) {
+			// 将key注入到vm中 访问props中属性时 实际访问的是_props
 			proxy(vm, `_props`, key)
 		}
 	}
@@ -145,6 +147,7 @@ function initData(vm: Component) {
 				vm
 			)
 		} else if (!isReserved(key)) {
+			// 同样的 将_data代理到vm上
 			proxy(vm, `_data`, key)
 		}
 	}
@@ -264,6 +267,7 @@ function createGetterInvoker(fn) {
 
 function initMethods(vm: Component, methods: Object) {
 	const props = vm.$options.props
+	// 需要获取props 防止methods中与props同名
 	for (const key in methods) {
 		if (process.env.NODE_ENV !== 'production') {
 			if (typeof methods[key] !== 'function') {
@@ -286,6 +290,7 @@ function initMethods(vm: Component, methods: Object) {
 				)
 			}
 		}
+		// 使用bind改变this指向为vm实例 注入到vm
 		vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm)
 	}
 }
@@ -309,10 +314,12 @@ function createWatcher(
 	handler: any,
 	options?: Object
 ) {
+	// 如果传入的是原始对象
 	if (isPlainObject(handler)) {
 		options = handler
 		handler = handler.handler
 	}
+	// 传入是字符串 获取vm中的属性
 	if (typeof handler === 'string') {
 		handler = vm[handler]
 	}
@@ -358,17 +365,24 @@ export function stateMixin(Vue: Class<Component>) {
 	): Function {
 		const vm: Component = this
 		if (isPlainObject(cb)) {
+			// 如果watch中handler属性传入的是对象  继续深入调用createWatcher
 			return createWatcher(vm, expOrFn, cb, options)
 		}
 		options = options || {}
+		// 将watcher标记为用户watcher
 		options.user = true
+		// 创建用户watcher
 		const watcher = new Watcher(vm, expOrFn, cb, options)
 		if (options.immediate) {
+			// 判断immediate 是否需要立即执行一次
 			const info = `callback for immediate watcher "${watcher.expression}"`
 			pushTarget()
 			invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
 			popTarget()
 		}
+		// 返回解除监听的方法
+		// 如果是初始化时调用的$watch 这个方法不会由用户调用 真正的解除监听会在触发$destroy时调用
+		// 如果是运行时调用的$watch 用户可以使用此方法解除监听
 		return function unwatchFn() {
 			watcher.teardown()
 		}

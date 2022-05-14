@@ -34,6 +34,7 @@ const hooks = ['create', 'activate', 'update', 'remove', 'destroy']
 
 function sameVnode (a, b) {
   return (
+  	// key相同 且 标签名相同  如果不设置key 判断为真 需要进行patchVnode详细比较
     a.key === b.key &&
     a.asyncFactory === b.asyncFactory && (
       (
